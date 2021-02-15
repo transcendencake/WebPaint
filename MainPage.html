@@ -1,0 +1,167 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link href="Content/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="Content/jquery.postitall.css">
+    <style>
+        svg {
+            margin: auto;
+            display: block;
+            background: yellow;
+        }
+
+        .cursor {
+            fill: none;
+            stroke: red;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td class="btn-group-vertical mr-10" role="group">
+                <button type="button" class="btn btn-primary" id="pen">Draw</button>
+                <button type="button" class="btn btn-primary" id="eraser">Erase</button>
+                <button type="button" class="btn btn-primary" id="text">Text</button>
+                <button type="button" class="btn btn-primary" id="note">Note</button>
+            </td>
+            <td id="canvas"></td>
+        </tr>
+    </table>
+
+
+
+    <div id="mainRoom">
+        <div id="idAddDemoPostit">Content of the postit 1</div>
+    </div>
+
+
+    <script src="Scripts/jquery-3.4.1.min.js"></script>
+    <script src="Scripts/jquery.postitall.js"></script>
+    <script src="Scripts/jquery.signalR-2.4.1.min.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="signalr/hubs"></script>
+    <script>
+        $(function () {
+            $(document).ready(function () {
+                console.log('message')
+                $('#idAddDemoPostit').postitall();
+            });
+
+            var cursorPic;
+
+            var mainw = 960,
+                mainh = 500;
+
+            d3.select('#canvas').append('svg')
+                .attr('width', mainw)
+                .attr('height', mainh);
+
+            function removeCursor() {
+                if (cursorPic) {
+                    var elems = $('.cursor').get();
+                    for (elem of elems) {
+                        elem.parentNode.removeChild(elem);
+                    }
+                    //.parentNode.removeChild()
+                }
+            }
+
+            function draw(selection) {
+                removeCursor();
+                // cursorPic = cursors["pen"]
+                cursorPic = d3.select('svg').append("circle")
+                    .attr("r", 5)
+                    .attr("transform", "translate(0,0)")
+                    .attr("class", "cursor");
+                var xy0,
+                    path,
+                    keep = false,
+                    line = d3.svg.line()
+                        .x(function (d) { return d[0]; })
+                        .y(function (d) { return d[1]; });
+
+                selection
+                    .on('mousedown', function () {
+                        keep = true;
+                        xy0 = d3.mouse(this);
+                        path = d3.select('svg')
+                            .append('path')
+                            .attr('d', line([xy0, xy0]))
+                            .style({ 'stroke': 'black', 'stroke-width': '3px' });
+                    })
+                    .on('mouseup', function () {
+                        keep = false;
+                    })
+                    .on('mousemove', function () {
+                        if (keep) {
+                            Line = line([xy0, d3.mouse(this)]);
+                            console.log(Line);
+                            path.attr('d', Line)
+                                .attr("class", "deletable");
+                        }
+                        cursorPic.attr("transform", "translate(" + d3.mouse(this) + ")");
+                    });
+            }
+            function erase(selection) {
+                removeCursor();
+                var cursorPicSize = 10
+                cursorPic = d3.select('svg').append("rect")
+                    .attr("width", cursorPicSize)
+                    .attr("height", cursorPicSize)
+                    .attr("transform", "translate(0,0)")
+                    .attr("style", { 'stroke': 'black', 'stroke-width': '1px' })
+                    .attr("class", "cursor");
+
+                selection
+                    .on('mousedown', null)
+                    .on('mouseup', null)
+                    .on('mousemove', function () {
+                        cursorPic.attr("transform", "translate(" + [d3.mouse(this)[0] - cursorPicSize / 2, d3.mouse(this)[1] - cursorPicSize / 2] + ")");
+                    })
+            }
+
+
+            var mainHub = $.connection.mainHub;
+
+            mainHub.client.hello = function () {
+                $('#mainRoom').append('<p>Hello</p>');
+            }
+
+            $.connection.hub.start().done(function () {
+
+                $('#pen').click(function () {
+                    d3.select('svg').call(draw);
+                })
+
+                $('#eraser').click(function () {
+                    $('.deletable').click(function (evt) {
+
+                        var xmls = new XMLSerializer();
+
+                        var element = xmls.serializeToString(evt.target);
+                        console.log(element);
+                        var parent = evt.target.parentNode;
+                        parent.removeChild(evt.target);
+
+                        document.querySelector('svg').insertAdjacentHTML('beforeend', element);
+                    })
+                    d3.select('svg').call(erase);
+                })
+
+                alert("connected");
+                $('#hello').click(function () {
+                    alert("clicked");
+                    mainHub.server.hello();
+                });
+
+            });
+        })
+
+
+    </script>
+</body>
+</html>
