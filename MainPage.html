@@ -101,7 +101,7 @@
                             Line = line([xy0, d3.mouse(this)]);
                             console.log(Line);
                             path.attr('d', Line)
-                                .attr("class", "deletable");
+                                .attr("class", "deletable line");
                         }
                         cursorPic.attr("transform", "translate(" + d3.mouse(this) + ")");
                     });
@@ -124,17 +124,62 @@
                     })
             }
 
+            function text(selection) {
+                var fieldAppended = false;
+
+                removeCursor();
+                var cursorPicSize = 15, widthK = 8;
+                cursorPic = d3.select('svg').append("rect")
+                    .attr("width", cursorPicSize * widthK)
+                    .attr("height", cursorPicSize)
+                    .attr("transform", "translate(0,0)")
+                    .attr("style", { 'stroke': 'black', 'stroke-width': '1px' })
+                    .attr("class", "cursor");
+
+                selection
+                    .on('mousedown', function () {
+                        if (!fieldAppended) {
+                            var foreignObject = d3.select('svg').append("foreignObject")
+                                .attr("x", d3.mouse(this)[0])
+                                .attr("y", d3.mouse(this)[1])
+                                .attr("height", cursorPicSize)
+                                .attr("width", cursorPicSize * widthK)
+                                .attr("requiredExtensions", "http://www.w3.org/1999/xhtml")
+                                .attr("class", "deletable foreignObject")
+                            foreignObject.append("xhtml:textarea")
+                                .attr("type", "text")
+                                .attr("class", "deletable text")
+                                .on("change", function () {
+                                    console.log(this.value);
+                                });
+                            fieldAppended = true;
+                            removeCursor();
+                        }
+                        else {
+                            var xmls = new XMLSerializer();
+
+                            var element = xmls.serializeToString(foreignObject);
+                            console.log(element);
+                        }                        
+                    })
+                    .on('mouseup', null)
+                    .on('mousemove', function () {
+                        if (!fieldAppended)
+                        cursorPic.attr("transform", "translate(" + d3.mouse(this) + ")");
+                    })
+            }
+
 
             var mainHub = $.connection.mainHub;
-
-            mainHub.client.hello = function () {
-                $('#mainRoom').append('<p>Hello</p>');
-            }
 
             $.connection.hub.start().done(function () {
 
                 $('#pen').click(function () {
                     d3.select('svg').call(draw);
+                })
+
+                $('#text').click(function () {
+                    d3.select('svg').call(text);
                 })
 
                 $('#eraser').click(function () {
@@ -147,17 +192,10 @@
                         var parent = evt.target.parentNode;
                         parent.removeChild(evt.target);
 
-                        document.querySelector('svg').insertAdjacentHTML('beforeend', element);
+                        //document.querySelector('svg').insertAdjacentHTML('beforeend', element);
                     })
                     d3.select('svg').call(erase);
                 })
-
-                alert("connected");
-                $('#hello').click(function () {
-                    alert("clicked");
-                    mainHub.server.hello();
-                });
-
             });
         })
 
