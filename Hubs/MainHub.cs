@@ -11,21 +11,42 @@ namespace WebApp.Hubs
     {
         static List<TextField> textFields = new List<TextField>();
         static List<string> lines = new List<string>();
+        static List<NoteIt> notes = new List<NoteIt>();
 
+        public void AddNote(string id, string options)
+        {
+            bool existing = false;
+            var newNote = new NoteIt { Id = id, Options = options };
+            foreach (var note in notes)
+            {
+                if (note.Equals(newNote))
+                {
+                    note.Options = newNote.Options;
+                    existing = true;
+                    break;
+                }
+            }
+            if (!existing)
+            {
+                notes.Add(newNote);
+                Clients.Others.addNote(id, options);
+            }
+            
+        }
         public void AddLine(string line)
         {
             lines.Add(line);
-            Clients.AllExcept(Context.ConnectionId).addLine(line);
+            Clients.Others.addLine(line);
         }
         public void RemoveLine(string line)
         {
             lines.Remove(line);
-            Clients.AllExcept(Context.ConnectionId).removeLine(line);
+            Clients.Others.removeLine(line);
         }
         public void AddTextField(int x, int y, int w, int h, string text)
         {
             bool existing = false;
-            var newTextField = new TextField{ X = x, Y = y, W = w, H = h, TextContent = text };
+            var newTextField = new TextField { X = x, Y = y, W = w, H = h, TextContent = text };
             foreach (var textField in textFields)
             {
                 if (textField.Equals(newTextField))
@@ -36,7 +57,7 @@ namespace WebApp.Hubs
                 }
             }
             if (!existing) textFields.Add(newTextField);
-            Clients.AllExcept(Context.ConnectionId).addTextField(x, y, w, h, text, existing);
+            Clients.Others.addTextField(x, y, w, h, text, existing);
         }
         public void RemoveTextField(int x, int y)
         {
@@ -48,7 +69,7 @@ namespace WebApp.Hubs
                     break;
                 }
             }
-            Clients.AllExcept(Context.ConnectionId).removeTextField(x, y);
+            Clients.Others.removeTextField(x, y);
         }
     }
 }

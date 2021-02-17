@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
 
 [assembly: OwinStartup(typeof(WebApp.Startup))]
 
@@ -13,7 +14,9 @@ namespace WebApp
     {
         public void Configuration(IAppBuilder app)
         {
-            app.MapSignalR();
+            var hubConfiguration = new HubConfiguration();
+            hubConfiguration.EnableDetailedErrors = true;
+            app.MapSignalR(hubConfiguration);
         }
     }
 }
