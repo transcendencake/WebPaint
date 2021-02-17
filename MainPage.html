@@ -183,33 +183,14 @@
                         if (!fieldAppended) {
                             var x = d3.mouse(this)[0], y = d3.mouse(this)[1];
                             var foreignObject = AppendForeignObject(x,
-                                y, cursorPicSize * widthK, cursorPicSize)
-                            //var foreignObject = d3.select('svg').append("foreignObject")
-                            //    .attr("x", d3.mouse(this)[0])
-                            //    .attr("y", d3.mouse(this)[1])
-                            //    .attr("height", cursorPicSize)
-                            //    .attr("width", cursorPicSize * widthK)
-                            //    .attr("requiredExtensions", "http://www.w3.org/1999/xhtml")
-                            //    .attr("class", "deletable foreignObject")
-                            //foreignObject.append("xhtml:textarea")
-                            //    .attr("type", "text")
-                            //    .attr("class", "deletable text")
-                            //    .on("change", function () {
-                            //        console.log(this.value);
-                            //    });
+                                y, cursorPicSize * widthK, cursorPicSize)                          
                             var textArea = AppendTextArea("", foreignObject);
                             console.log(textArea);
                             fieldAppended = true;
                             removeCursor();
                             mainHub.server.addTextField(x, y, cursorPicSize * widthK, cursorPicSize, textArea[0].value);
 
-                        }
-                        else {
-                            //var xmls = new XMLSerializer();
-
-                            //var element = xmls.serializeToString(foreignObject);
-                            //console.log(element);
-                        }                        
+                        }                      
                     })
                     .on('mouseup', null)
                     .on('mousemove', function () {
@@ -238,8 +219,6 @@
                     }
                     var parent = target.parentNode;
                     parent.removeChild(target);
-
-                    //document.querySelector('svg').insertAdjacentHTML('beforeend', element);
                 })
                 d3.select('svg').call(erase);
             })
