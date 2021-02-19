@@ -6,6 +6,9 @@
     <link href="Content/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="Content/jquery.postitall.css">
     <style>
+        body {
+            background: #E0FFFF
+        }
         svg {
             margin: auto;
             display: block;
@@ -23,10 +26,26 @@
     <table>
         <tr>
             <td class="btn-group-vertical mr-10" role="group">
-                <button type="button" class="btn btn-primary" id="pen">Draw</button>
-                <button type="button" class="btn btn-primary" id="eraser">Erase</button>
-                <button type="button" class="btn btn-primary" id="text">Text</button>
-                <button type="button" class="btn btn-primary" id="note">Note</button>
+                <button type="button" class="" id="pen" 
+                        style="background: url('Icons/pen.png') no-repeat left center;
+                        background-size: cover;
+                        width: 50px;
+                        height: 50px;"></button>
+                <button type="button" class="" id="eraser" style="background: url('Icons/eraser.png') no-repeat left center;
+                        background-size: cover;
+                        width: 50px;
+                        height: 50px;"></button>
+                <button type="button" class="" id="text" style="background: url('Icons/text.png') no-repeat left center;
+                        background-size: cover;
+                        width: 50px;
+                        height: 50px;"></button>
+                <button type="button" class="" id="note" style="background: url('Icons/note.png') no-repeat left center; background-size:cover;
+                        width: 50px;
+                        height: 50px;"></button>
+                <!--<img src="Icons/pen.png" class="" id="pen" width="50" height="50">
+                <img src="Icons/eraser.png" class="" id="eraser" width="50" height="50">
+                <img src="Icons/text.png" class="" id="text" width="50" height="50">
+                <img src="Icons/note.png" class="" id="note" width="50" height="50">-->
             </td>
             <td id="canvas"></td>
         </tr>
@@ -50,12 +69,9 @@
             var xmls = new XMLSerializer();
             var mainHub = $.connection.mainHub;
 
-            var mainw = 960,
-                mainh = 500;
-
             d3.select('#canvas').append('svg')
-                .attr('width', mainw)
-                .attr('height', mainh);
+                .attr('width', document.body.clientWidth)
+                .attr('height', window.screen.availHeight);
 
             mainHub.client.addLine = function (line) {
                // alert("AddLine called by server");
@@ -114,6 +130,7 @@
                 var xy0,
                     path,
                     keep = false,
+                    pathString,
                     line = d3.svg.line()
                         .x(function (d) { return d[0]; })
                         .y(function (d) { return d[1]; });
@@ -122,35 +139,45 @@
                     .on('mousedown', function () {
                         keep = true;
                         xy0 = d3.mouse(this);
-                        path = d3.select('svg')
-                            .append('path')
-                            .attr('d', line([xy0, xy0]))
-                            .style({ 'stroke': 'black', 'stroke-width': '3px' });
+                        //path = d3.select('svg')
+                        //    .append('path')
+                        //    .attr('d', line([xy0, xy0]))
+                        //    .style({ 'stroke': 'black', 'stroke-width': '3px' });
                     })
                     .on('mouseup', function () {
                         keep = false;
-                        var pathString = $(path).get()[0][0];
-                        pathStr = xmls.serializeToString(pathString);
-                        console.log(pathStr);
-                        mainHub.server.addLine(pathStr).done(function () {
-                            console.log("Suceed")
-                        }).fail(function (error) {
-                            console.log(error);
-                        });
-                        console.log(pathString);
+                        
                     })
                     .on('mousemove', function () {
                         if (keep) {
                             Line = line([xy0, d3.mouse(this)]);
                             console.log(Line);
-                            path.attr('d', Line)
-                                .attr("class", "deletable line");
+
+                            path = d3.select('svg')
+                                .append('path')
+                                .attr('d', Line)
+                                .attr("class", "deletable line")
+                                .style({ 'stroke': 'black', 'stroke-width': '3px' });
+
+                            pathString = $(path).get()[0][0];
+                            pathStr = xmls.serializeToString(pathString);
+                            console.log(pathStr);
+                            mainHub.server.addLine(pathStr).done(function () {
+                                console.log("Suceed")
+                            }).fail(function (error) {
+                                console.log(error);
+                            });
+                            console.log(pathString);
+
+                            xy0 = d3.mouse(this);
+
                         }
                         cursorPic.attr("transform", "translate(" + d3.mouse(this) + ")");
                     });
             }
             function erase(selection) {
                 removeCursor();
+                var keep = false;
                 var cursorPicSize = 10
                 cursorPic = d3.select('svg').append("rect")
                     .attr("width", cursorPicSize)
@@ -160,8 +187,27 @@
                     .attr("class", "cursor");
 
                 selection
-                    .on('mousedown', null)
-                    .on('mouseup', null)
+                    .on('mousedown', function () {
+                        keep = true;
+                        $('.deletable').mouseover(function (evt) {
+                            let target = evt.target;
+                            if (target.classList.contains("line")) {
+                                var lineToRemove = xmls.serializeToString(target);
+                                console.log(lineToRemove);
+                                mainHub.server.removeLine(lineToRemove);
+                            }
+                            else if (target.classList.contains("text")) {
+                                console.log(target);
+                                mainHub.server.removeTextField(target.offsetParent.getAttribute('x'), target.offsetParent.getAttribute('y'))
+                            }
+                            var parent = target.parentNode;
+                            parent?.removeChild(target);
+                        })
+                    })
+                    .on('mouseup', function () {
+                        keep = false;
+                        $('.deletable').mouseover(null);
+                    })
                     .on('mousemove', function () {
                         cursorPic.attr("transform", "translate(" + [d3.mouse(this)[0] - cursorPicSize / 2, d3.mouse(this)[1] - cursorPicSize / 2] + ")");
                     })
@@ -205,21 +251,7 @@
             $('#text').click(function () {
                 d3.select('svg').call(text);
             })
-            $('#eraser').click(function () {
-                $('.deletable').click(function (evt) {
-                    let target = evt.target;
-                    if (target.classList.contains("line")) {
-                        var lineToRemove = xmls.serializeToString(target);
-                        console.log(lineToRemove);
-                        mainHub.server.removeLine(lineToRemove);
-                    }
-                    else if (target.classList.contains("text")) {
-                        console.log(target);
-                        mainHub.server.removeTextField(target.offsetParent.getAttribute('x'), target.offsetParent.getAttribute('y'))
-                    }
-                    var parent = target.parentNode;
-                    parent.removeChild(target);
-                })
+            $('#eraser').click(function () {                
                 d3.select('svg').call(erase);
             })
             $('#note').click(function () {
